@@ -1,0 +1,36 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:11.6
+    expose:
+    - "5433"
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: idempotency_dev
+      POSTGRES_PASSWORD: idempotency_pwd
+      POSTGRES_DB: idempotency_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+  web:
+    restart: always
+    environment:
+      - DJANGO_SECRET_KEY=local
+    build: ./
+    command: >
+      bash -c "python wait_for_postgres.py &&
+               ./manage.py migrate &&
+               ./manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+  documentation:
+    restart: always
+    build: ./
+    command: "mkdocs serve"
+    volumes:
+      - ./:/code
+    ports:
+      - "8001:8001"
